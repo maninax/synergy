@@ -31,6 +31,7 @@
 #include "ZeroconfService.h"
 #include "DataDownloader.h"
 #include "CommandProcess.h"
+#include "SubscriptionManager.h"
 #include "EditionType.h"
 #include "QUtility.h"
 #include "ProcessorArch.h"
@@ -133,7 +134,7 @@ MainWindow::MainWindow(QSettings& settings, AppConfig& appConfig) :
 
 	m_pComboServerList->hide();
 
-	updateEdition();
+	setEdition(m_AppConfig.edition());
 
 	m_pLabelPadlock->hide();
 
@@ -553,11 +554,8 @@ void MainWindow::startSynergy()
 	if ((synergyType() == synergyClient && !clientArgs(args, app))
 		|| (synergyType() == synergyServer && !serverArgs(args, app)))
 	{
-		if (desktopMode)
-		{
-			stopSynergy();
-			return;
-		}
+		stopSynergy();
+		return;
 	}
 
 	if (desktopMode)
@@ -699,6 +697,19 @@ QString MainWindow::appPath(const QString& name)
 
 bool MainWindow::serverArgs(QStringList& args, QString& app)
 {
+	int edition;
+	SubscriptionManager subscriptionManager(this, appConfig(), edition);
+	if (subscriptionManager.fileExists())
+	{
+		if (!subscriptionManager.checkSubscription()) {
+			return false;
+		}
+		else {
+			setEdition(edition);
+		}
+	}
+
+
 	app = appPath(appConfig().synergysName());
 
 	if (!QFile::exists(app))
@@ -727,6 +738,25 @@ bool MainWindow::serverArgs(QStringList& args, QString& app)
 #endif
 	args << "-c" << configFilename << "--address" << address();
 
+#if defined(Q_OS_WIN)
+	// pass in physical resolution and primary screen center
+	// TODO: get this information in the core binary even when
+	// high DPI is used
+	int height = QApplication::desktop()->height();
+	int width = QApplication::desktop()->width();
+
+	QRect rec = QApplication::desktop()->screenGeometry();
+	int heightCenter = rec.height() / 2;
+	int widthCenter = rec.width() / 2;
+
+	appendLogDebug(tr("screen resolution: %1 %2 primary screen center: %3 %4")
+				   .arg(width).arg(height).arg(widthCenter).arg(heightCenter));
+
+	args << "--res-w" << QString::number(width);
+	args << "--res-h" << QString::number(height);
+	args << "--prm-wc" << QString::number(widthCenter);
+	args << "--prm-hc" << QString::number(heightCenter);
+ #endif
 	return true;
 }
 
@@ -928,7 +958,7 @@ void MainWindow::changeEvent(QEvent* event)
 			retranslateUi(this);
 			retranslateMenuBar();
 
-			updateEdition();
+			setEdition(m_AppConfig.edition());
 
 			break;
 		}
@@ -976,6 +1006,9 @@ void MainWindow::setEdition(int type)
 	}
 	else if (type == Pro) {
 		title = "Synergy Pro";
+	}
+	else if (type == Trial) {
+		title = "Synergy Trial";
 	}
 	else {
 		title = "Synergy (UNREGISTERED)";
@@ -1269,20 +1302,6 @@ void MainWindow::promptAutoConfig()
 	}
 
 	m_AppConfig.setAutoConfigPrompted(true);
-}
-
-void MainWindow::updateEdition()
-{
-	QString mac = getFirstMacAddress();
-	QString hashSrc = m_AppConfig.activateEmail() + mac;
-	QString hashResult = hash(hashSrc);
-
-	if (hashResult == m_AppConfig.userToken()) {
-		setEdition(m_AppConfig.edition());
-	}
-	else {
-		setEdition(Unknown);
-	}
 }
 
 void MainWindow::on_m_pComboServerList_currentIndexChanged(QString )

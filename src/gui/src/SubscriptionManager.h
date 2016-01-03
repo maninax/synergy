@@ -1,6 +1,6 @@
 /*
  * synergy -- mouse and keyboard sharing utility
- * Copyright (C) 2013 Synergy Si Ltd.
+ * Copyright (C) 2015 Synergy Seamless Inc.
  *
  * This package is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,15 +17,31 @@
 
 #pragma once
 
-#include "ProcessorArch.h"
+#include <QWidget>
 
-#include <QComboBox>
-#include <QVariant>
-#include <QCryptographicHash>
-#include <QNetworkInterface>
+class AppConfig;
 
-void setIndexFromItemData(QComboBox* comboBox, const QVariant& itemData);
-QString hash(const QString& string);
-QString getFirstMacAddress();
-qProcessorArch getProcessorArch();
-QString getOSInformation();
+class SubscriptionManager : public QWidget
+{
+public:
+	SubscriptionManager(QWidget* parent, AppConfig& appConfig, int& edition);
+
+	bool activateSerial(const QString& serial);
+	bool checkSubscription();
+	bool fileExists();
+	QString getLastError(){ return m_ErrorMessage; }
+
+private:
+	void checkError(QString& error);
+	void checkOutput(QString& output);
+	void getEditionType(QString& output);
+	void checkExpiring(QString& output);
+	bool shouldWarnExpiring();
+	void persistDirectory();
+
+private:
+	QString m_ErrorMessage;
+	QWidget* m_pParent;
+	AppConfig& m_AppConfig;
+	int& m_Edition;
+};

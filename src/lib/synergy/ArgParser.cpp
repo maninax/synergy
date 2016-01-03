@@ -23,7 +23,9 @@
 #include "synergy/ClientArgs.h"
 #include "synergy/ToolArgs.h"
 #include "synergy/ArgsBase.h"
+#include "synergy/DpiHelper.h"
 #include "base/Log.h"
+#include "base/String.h"
 
 ArgsBase* ArgParser::m_argsBase = NULL;
 
@@ -55,6 +57,18 @@ ArgParser::parseServerArgs(ServerArgs& args, int argc, const char* const* argv)
 		else if (isArg(i, argc, argv, "-c", "--config", 1)) {
 			// save configuration file path
 			args.m_configFile = argv[++i];
+		}
+		else if (isArg(i, argc, argv, "", "--res-w", 1)) {
+			DpiHelper::s_resolutionWidth = synergy::string::stringToSizeType(argv[++i]);
+		}
+		else if (isArg(i, argc, argv, "", "--res-h", 1)) {
+			DpiHelper::s_resolutionHeight = synergy::string::stringToSizeType(argv[++i]);
+		}
+		else if (isArg(i, argc, argv, "", "--prm-wc", 1)) {
+			DpiHelper::s_primaryWidthCenter = synergy::string::stringToSizeType(argv[++i]);
+		}
+		else if (isArg(i, argc, argv, "", "--prm-hc", 1)) {
+			DpiHelper::s_primaryHeightCenter = synergy::string::stringToSizeType(argv[++i]);
 		}
 		else {
 			LOG((CLOG_PRINT "%s: unrecognized option `%s'" BYE, args.m_pname, argv[i], args.m_pname));
@@ -163,7 +177,6 @@ ArgParser::parsePlatformArg(ArgsBase& argsBase, const int& argc, const char* con
 #endif
 }
 
-
 bool
 ArgParser::parseToolArgs(ToolArgs& args, int argc, const char* const* argv)
 {
@@ -194,6 +207,26 @@ ArgParser::parseToolArgs(ToolArgs& args, int argc, const char* const* argv)
 		}
 		else if (isArg(i, argc, argv, NULL, "--get-arch", 0)) {
 			args.m_getArch = true;
+			return true;
+		}
+		else if (isArg(i, argc, argv, NULL, "--subscription-serial", 1)) {
+			args.m_subscriptionSerial = argv[++i];
+			if (args.m_subscriptionSerial.empty()) {
+				LOG((CLOG_CRIT "subscription error: serial was not provided"));
+				return false;
+			}
+			return true;
+		}
+		else if (isArg(i, argc, argv, NULL, "--get-subscription-filename", 0)) {
+			args.m_getSubscriptionFilename = true;
+			return true;
+		}
+		else if (isArg(i, argc, argv, NULL, "--check-subscription", 0)) {
+			args.m_checkSubscription = true;
+			return true;
+		}
+		else if (isArg(i, argc, argv, NULL, "--notify-activation", 0)) {
+			args.m_notifyActivation = true;
 			return true;
 		}
 		else {

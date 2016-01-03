@@ -1,6 +1,6 @@
 /*
  * synergy -- mouse and keyboard sharing utility
- * Copyright (C) 2013 Synergy Si Ltd.
+ * Copyright (C) 2015 Synergy Seamless Inc.
  *
  * This package is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -15,17 +15,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "ActivationNotifier.h"
 
-#include "ProcessorArch.h"
+#include "CoreInterface.h"
 
-#include <QComboBox>
-#include <QVariant>
-#include <QCryptographicHash>
-#include <QNetworkInterface>
+ActivationNotifier::ActivationNotifier(QObject *parent) :
+    QObject(parent)
+{
+}
 
-void setIndexFromItemData(QComboBox* comboBox, const QVariant& itemData);
-QString hash(const QString& string);
-QString getFirstMacAddress();
-qProcessorArch getProcessorArch();
-QString getOSInformation();
+void ActivationNotifier::setIdentity(QString identity)
+{
+	m_Identity = identity;
+}
+
+void ActivationNotifier::notify()
+{
+	CoreInterface coreInterface;
+	coreInterface.notifyActivation(m_Identity);
+}
